@@ -18,6 +18,7 @@ import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 interface Props {
   defaultSearchValue?: string
+  defaultFromValue?: string
   defaultToValue?: string
   templates?: any
   isLoading: boolean
@@ -46,6 +47,7 @@ const LogPanel: FC<Props> = ({
   onRefresh,
   onSearch = () => {},
   defaultSearchValue = '',
+  defaultFromValue = '',
   defaultToValue = '',
   onCustomClick,
   onSelectTemplate,
@@ -56,6 +58,7 @@ const LogPanel: FC<Props> = ({
 }) => {
   const [search, setSearch] = useState('')
   const [to, setTo] = useState({ value: '', error: '' })
+  const [from, setFrom] = useState({ value: '', error: '' })
   const [defaultTimestamp, setDefaultTimestamp] = useState(dayjs().utc().toISOString())
 
   // Sync local state with provided default value
@@ -69,9 +72,12 @@ const LogPanel: FC<Props> = ({
     if (to.value !== defaultToValue) {
       setTo({ value: defaultToValue, error: '' })
     }
-  }, [defaultToValue])
+    if (from.value !== defaultFromValue) {
+      setFrom({ value: defaultFromValue, error: '' })
+    }
+  }, [defaultToValue, defaultFromValue])
 
-  const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     if (value !== '' && isNaN(Date.parse(value))) {
       setTo({ value, error: 'Invalid ISO 8601 timestamp' })
@@ -79,16 +85,26 @@ const LogPanel: FC<Props> = ({
       setTo({ value, error: '' })
     }
   }
-  const handleFromReset = async () => {
+
+  const handleFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value !== '' && isNaN(Date.parse(value))) {
+      setFrom({ value, error: 'Invalid ISO 8601 timestamp' })
+    } else {
+      setFrom({ value, error: '' })
+    }
+  }
+  const handleReset = async () => {
     setTo({ value: '', error: '' })
+    setFrom({ value: '', error: '' })
     const value = dayjs().utc().toISOString()
     setDefaultTimestamp(value)
-    onSearch({ query: search, to: '' })
+    onSearch({ query: search, to: '', from: '' })
   }
 
-  const handleSearch = () => onSearch({ query: search, to: to.value })
+  const handleSearch = () => onSearch({ query: search, to: to.value, from: from.value })
 
-  const showFromReset = to.value !== ''
+  const showReset = to.value !== '' || from.value !== ''
   return (
     <div
       className="
@@ -143,6 +159,112 @@ const LogPanel: FC<Props> = ({
               Templates
             </Button>
           </Dropdown>
+
+          {!isCustomQuery && (
+            <Button as="span" type="outline" onClick={onCustomClick}>
+              Explore via query
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center   gap-x-4">
+          {!isCustomQuery && (
+            <>
+              <div className="flex flex-row">
+                <Popover
+                  side="bottom"
+                  align="end"
+                  portalled
+                  overlay={
+                    <>
+                      <Input
+                        label="From"
+                        labelOptional="UTC"
+                        value={from.value === '' ? defaultTimestamp : from.value}
+                        onChange={handleFromChange}
+                        error={from.error}
+                        className="w-72 p-3"
+                      />
+                      <Input
+                        label="To"
+                        labelOptional="UTC"
+                        value={to.value === '' ? defaultTimestamp : to.value}
+                        onChange={handleToChange}
+                        error={to.error}
+                        className="w-72 p-3"
+                      />
+                      <div className="flex flex-row justify-end pb-2 px-4">
+                        <Button
+                          key="set"
+                          size="tiny"
+                          title="Set"
+                          type="secondary"
+                          onClick={handleSearch}
+                        >
+                          Set
+                        </Button>
+                      </div>
+                    </>
+                  }
+                >
+                  <Button
+                    as="span"
+                    size="tiny"
+                    className={showReset ? '!rounded-r-none' : ''}
+                    type={showReset ? 'outline' : 'text'}
+                    icon={<IconClock size="tiny" />}
+                  >
+                    {to.value || from.value ? 'Custom' : 'Now'}
+                  </Button>
+                </Popover>
+                {showReset && (
+                  <Button
+                    size="tiny"
+                    className={showReset ? '!rounded-l-none' : ''}
+                    icon={<IconX size="tiny" />}
+                    type="outline"
+                    title="Clear timestamp filter"
+                    onClick={handleReset}
+                  />
+                )}
+              </div>
+              {!isCustomQuery && (
+                <div className="flex items-center space-x-2">
+                  <p className="text-xs">Show event chart</p>
+                  <Toggle size="tiny" checked={isShowingEventChart} onChange={onToggleEventChart} />
+                </div>
+              )}
+              {/* wrap with form so that if user presses enter, the search value will submit automatically */}
+              <form
+                id="log-panel-search"
+                onSubmit={(e) => {
+                  // prevent redirection
+                  e.preventDefault()
+                  handleSearch()
+                }}
+              >
+                <Input
+                  placeholder="Search events"
+                  onChange={(e) => setSearch(e.target.value)}
+                  value={search}
+                  actions={[
+                    search && (
+                      <IconX
+                        key="clear-search"
+                        size="tiny"
+                        className="cursor-pointer mx-1"
+                        title="Clear search"
+                        onClick={() => setSearch('')}
+                      />
+                    ),
+
+                    <Button key="go" size="tiny" title="Go" type="default" onClick={handleSearch}>
+                      <IconSearch size={16} />
+                    </Button>,
+                  ]}
+                />
+              </form>
+            </>
+          )}
         </div>
         {editorControls}
       </div>

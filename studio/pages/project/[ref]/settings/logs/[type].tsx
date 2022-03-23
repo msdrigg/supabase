@@ -57,7 +57,7 @@ import PreviewFilterPanel from 'components/interfaces/Settings/Logs/PreviewFilte
  */
 export const LogPage: NextPage = () => {
   const router = useRouter()
-  const { ref, type, s, te, severity } = router.query
+  const { ref, type, s, te, ts } = router.query
   const [showChart, setShowChart] = useState(true)
 
   const [whereFilters, dispatchWhereFilters] = useReducer(filterReducer, {})
@@ -65,8 +65,8 @@ export const LogPage: NextPage = () => {
   const table = type === 'api' ? LogsTableName.EDGE : LogsTableName.POSTGRES
 
   const [
-    { error, logData, params, newCount, filters, isLoading },
-    { loadOlder, setFilters, refresh, setTo },
+    { error, logData, params, newCount, filters, isLoading, oldestTimestamp },
+    { loadOlder, setFilters, refresh, setTo, setFrom },
   ] = useLogsPreview(ref as string, table, {
     initialFilters: { search_query: s as string },
     whereStatementFactory: (filterObj) => `${
@@ -86,8 +86,25 @@ export const LogPage: NextPage = () => {
     } else {
       setTo('')
     }
-  }, [s, te])
+    if (ts) {
+      setFrom(ts as string)
+    } else {
+      setFrom('')
+    }
+  }, [s, te, ts])
 
+  useEffect(() => {
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...router.query,
+        q: undefined,
+        s: filters.search_query || '',
+        ts: params.timestamp_start,
+        te: params.timestamp_end,
+      },
+    })
+  }, [params.timestamp_end, params.timestamp_start, filters.search_query])
   const onSelectTemplate = (template: LogTemplate) => {
     setFilters((prev) => ({ ...prev, search_query: template.searchString }))
   }
@@ -104,25 +121,34 @@ export const LogPage: NextPage = () => {
       query: {
         ...router.query,
         te: undefined,
+        ts: undefined,
         ...whereFilters,
       },
     })
   }
 
-  const handleSearch: LogSearchCallback = ({ query, to, toMicro }) => {
-    const unixMicro = toMicro ? toMicro : dayjs(to).valueOf() * 1000
-    setTo(unixMicro ? String(unixMicro) : '')
+  const handleSearch: LogSearchCallback = ({ query, to, from, fromMicro, toMicro }) => {
+    let toValue, fromValue
+    if (to || toMicro) {
+      toValue = toMicro ? toMicro : dayjs(to).valueOf() * 1000
+
+      setTo(String(toValue))
+    }
+    if (from || fromMicro) {
+      const fromValue = fromMicro ? fromMicro : dayjs(from).valueOf() * 1000
+      setFrom(String(fromValue))
+    }
     setFilters((prev) => ({ ...prev, search_query: query || '' }))
-    router.push({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        q: undefined,
-        s: query || '',
-        te: unixMicro,
-        ...whereFilters,
-      },
-    })
+    // router.push({
+    //   pathname: router.pathname,
+    //   query: {
+    //     ...router.query,
+    //     q: undefined,
+    //     s: query || '',
+    //     te: unixMicro,
+    //     ...whereFilters,
+    //   },
+    // })
   }
 
   return (
@@ -146,6 +172,13 @@ export const LogPage: NextPage = () => {
           defaultSearchValue={filters.search_query}
           defaultToValue={
             params.timestamp_end ? dayjs(Number(params.timestamp_end) / 1000).toISOString() : ''
+          }
+          defaultFromValue={
+            params.timestamp_start
+              ? dayjs(Number(params.timestamp_start) / 1000).toISOString()
+              : oldestTimestamp
+              ? dayjs(Number(oldestTimestamp) / 1000).toISOString()
+              : ''
           }
           onCustomClick={() => {
             router.push(`/project/${ref}/logs-explorer?q=${params.rawSql}`)
