@@ -7,6 +7,7 @@ import DatabaseApiSelectionRender, {
   DatabaseApiSelectionHeaderRender,
 } from './LogSelectionRenderers/DatabaseApiSelectionRender'
 import DatabasePostgresSelectionRender from './LogSelectionRenderers/DatabasePostgresSelectionRender'
+import DefaultSelectionRenderer from './LogSelectionRenderers/DefaultSelectionRenderer'
 
 interface Props {
   log: LogData
@@ -14,23 +15,17 @@ interface Props {
   queryType?: QueryType
 }
 
-/**
- * Log selection display
- */
 const LogSelection: FC<Props> = ({ log, onClose, queryType }) => {
   const Formatter = () => {
     switch (queryType) {
       case 'api':
         return <DatabaseApiSelectionRender log={log} />
-        break
 
       case 'database':
         return <DatabasePostgresSelectionRender log={log} />
-        break
 
       default:
-        return null
-        break
+        return <DefaultSelectionRenderer log={log} />
     }
   }
 
