@@ -39,19 +39,21 @@ import { LOGS_TABLES } from './Logs.constants'
  */
 interface Props {
   projectRef: string
-  queryType: QueryType
+  queryType?: keyof typeof LOGS_TABLES
+  tableName?: LogsTableName
 }
-export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType }) => {
+export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableName }) => {
   const router = useRouter()
   const { s, te, ts } = router.query
   const [showChart, setShowChart] = useState(true)
 
   const [whereFilters, dispatchWhereFilters] = useReducer(filterReducer, {})
 
-  // const table = queryType === 'api' ? LogsTableName.EDGE : LogsTableName.POSTGRES
+  const table = queryType ? LOGS_TABLES[queryType] : tableName
 
-  console.log('queryType', queryType)
-  const table = LOGS_TABLES[queryType]
+  if (!table){
+    throw new Error(`A valid table name needs to be specified for LogsPreviewer to build queries.`)
+  }
 
   const [
     { error, logData, params, newCount, filters, isLoading, oldestTimestamp },
@@ -137,7 +139,7 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType }) => {
         isLoading={isLoading}
         newCount={newCount}
         templates={TEMPLATES.filter(
-          (template) => template.for?.includes(queryType) && template.mode === 'simple'
+          (template) => queryType && template.for?.includes(queryType) && template.mode === 'simple'
         )}
         onRefresh={handleRefresh}
         onSearch={handleSearch}
@@ -182,7 +184,7 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType }) => {
           </div>
         )}
 
-        <LogTable data={logData} isCustomQuery={false} queryType={queryType} />
+        <LogTable data={logData} queryType={queryType} />
         <div className="p-2">
           <Button onClick={() => loadOlder()} icon={<IconRewind />} type="default">
             Load older
