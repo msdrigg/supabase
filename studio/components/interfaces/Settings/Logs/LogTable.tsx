@@ -29,9 +29,17 @@ const LogTable = ({ data = [], queryType }: Props) => {
   const hasId = columnNames.includes('id')
   const hasTimestamp = columnNames.includes('timestamp')
 
-  const DEFAULT_COLUMNS = columnNames.map((v) => ({ key: v, name: v, resizable: true }))
-  let columns
+  const DEFAULT_COLUMNS = columnNames.map((v) => {
+    let formatter = undefined
+    const firstRow: any = data[0]
+    const value = firstRow?.[v]
+    if (typeof value === 'object') {
+      formatter = () => `[Object]`
+    }
 
+    return { key: v, name: v, resizable: true, formatter }
+  })
+  let columns
   if (!queryType) {
     columns = DEFAULT_COLUMNS
   } else {
@@ -136,13 +144,19 @@ const LogTable = ({ data = [], queryType }: Props) => {
   }
 
   const stringData = JSON.stringify(data)
-  const logMap = useMemo(() => {
-    if (!hasId) return {} as LogMap
-    const logData = data as LogData[]
-    return logData.reduce((acc: LogMap, d: LogData) => {
+  const [dedupedData, logMap] = useMemo<[LogData[], LogMap]>(() => {
+    const deduped = [...new Set(data)] as LogData[]
+
+    if (!hasId) {
+      return [deduped, {} as LogMap]
+    }
+
+    const map = deduped.reduce((acc: LogMap, d: LogData) => {
       acc[d.id] = d
       return acc
     }, {}) as LogMap
+
+    return [deduped, map]
   }, [stringData])
 
   useEffect(() => {
@@ -161,11 +175,9 @@ const LogTable = ({ data = [], queryType }: Props) => {
     if (hasId && hasTimestamp) {
       return Object.values(logMap).sort((a, b) => b.timestamp - a.timestamp)
     } else {
-      const deduped = [...new Set(data)]
-      return deduped
+      return dedupedData
     }
   }, [stringData])
-
   return (
     <>
       {!queryType && (
@@ -233,13 +245,9 @@ const LogTable = ({ data = [], queryType }: Props) => {
             const row = r as LogData
             return row.id
           }}
-          onRowClick={(r) => {
-            // if (!hasLogDataFormat) return
-            const row = r as LogData
-            setFocusedLog(logMap[row.id])
-          }}
+          onRowClick={(r) => setFocusedLog(r)}
         />
-        {hasId && focusedLog && (
+        {focusedLog && (
           <div className="w-1/2 flex flex-col">
             <LogSelection
               onClose={() => setFocusedLog(null)}
