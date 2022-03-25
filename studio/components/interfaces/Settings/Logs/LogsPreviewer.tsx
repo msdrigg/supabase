@@ -19,6 +19,7 @@ import {
   filterSqlWhereBuilder,
   filterReducer,
   QueryType,
+  LogEventChart,
 } from 'components/interfaces/Settings/Logs'
 import dayjs from 'dayjs'
 import useLogsPreview from 'hooks/analytics/useLogsPreview'
@@ -162,7 +163,7 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
         whereFilters={whereFilters}
         table={table}
       />
-      {/* {showChart && (
+      {showChart && (
           <div>
             <LogEventChart
               data={!isLoading ? logData : undefined}
@@ -171,7 +172,7 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
               }}
             />
           </div>
-        )} */}
+        )}
       <div className="flex flex-col flex-grow relative">
         {isLoading && (
           <div
