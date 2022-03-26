@@ -19,6 +19,7 @@ import {
   filterSqlWhereBuilder,
   filterReducer,
   QueryType,
+  LogEventChart,
 } from 'components/interfaces/Settings/Logs'
 import dayjs from 'dayjs'
 import useLogsPreview from 'hooks/analytics/useLogsPreview'
@@ -51,10 +52,7 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
 
   const [whereFilters, dispatchWhereFilters] = useReducer(filterReducer, {})
 
-  console.log('queryType', queryType)
-  const table = LOGS_TABLES[queryType]
-
-  // const table = queryType ? LOGS_TABLES[queryType] : tableName
+  const table = queryType ? LOGS_TABLES[queryType] : tableName
 
   if (!table) {
     throw new Error(`A valid table name needs to be specified for LogsPreviewer to build queries.`)
@@ -87,18 +85,6 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
     }
   }, [s, te, ts])
 
-  useEffect(() => {
-    router.push({
-      pathname: router.pathname,
-      query: {
-        ...router.query,
-        q: undefined,
-        s: filters.search_query || '',
-        ts: params.timestamp_start,
-        te: params.timestamp_end,
-      },
-    })
-  }, [params.timestamp_end, params.timestamp_start, filters.search_query])
   const onSelectTemplate = (template: LogTemplate) => {
     setFilters((prev) => ({ ...prev, search_query: template.searchString }))
   }
@@ -122,17 +108,27 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
   }
 
   const handleSearch: LogSearchCallback = ({ query, to, from, fromMicro, toMicro }) => {
-    let toValue
+    let toValue, fromValue
     if (to || toMicro) {
       toValue = toMicro ? toMicro : dayjs(to).valueOf() * 1000
 
       setTo(String(toValue))
     }
     if (from || fromMicro) {
-      const fromValue = fromMicro ? fromMicro : dayjs(from).valueOf() * 1000
+      fromValue = fromMicro ? fromMicro : dayjs(from).valueOf() * 1000
       setFrom(String(fromValue))
     }
     setFilters((prev) => ({ ...prev, search_query: query || '' }))
+
+    router.push({
+      pathname: router.pathname,
+      query: {
+        ...router.query,
+        s: query || '',
+        ts: fromValue,
+        te: toValue,
+      },
+    })
   }
 
   return (
@@ -167,16 +163,16 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
         whereFilters={whereFilters}
         table={table}
       />
-      {/* {showChart && (
-          <div>
-            <LogEventChart
-              data={!isLoading ? logData : undefined}
-              onBarClick={(timestampMicro) => {
-                handleSearch({ query: filters.search_query, toMicro: timestampMicro })
-              }}
-            />
-          </div>
-        )} */}
+      {showChart && (
+        <div>
+          <LogEventChart
+            data={!isLoading ? logData : undefined}
+            onBarClick={(timestampMicro) => {
+              handleSearch({ query: filters.search_query, toMicro: timestampMicro })
+            }}
+          />
+        </div>
+      )}
       <div className="flex flex-col flex-grow relative">
         {isLoading && (
           <div
