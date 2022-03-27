@@ -175,7 +175,7 @@ export const LogsPreviewer: React.FC<Props> = ({
         condensedLayout={condensedLayout}
       />
       {showChart && !isLoading ? (
-        <div>
+        <div className={condensedLayout ? 'px-4' : ''}>
           <LogEventChart
             data={!isLoading ? logData : undefined}
             onBarClick={(timestampMicro) => {
