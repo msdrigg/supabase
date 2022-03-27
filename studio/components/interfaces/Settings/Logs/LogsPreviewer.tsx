@@ -44,8 +44,15 @@ interface Props {
   queryType?: keyof typeof LOGS_TABLES
   tableName?: LogsTableName
   override?: Override
+  condensedLayout?: Boolean
 }
-export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableName, override }) => {
+export const LogsPreviewer: React.FC<Props> = ({
+  projectRef,
+  queryType,
+  tableName,
+  override,
+  condensedLayout = false,
+}) => {
   const router = useRouter()
   const { s, te, ts } = router.query
   const [showChart, setShowChart] = useState(true)
@@ -162,6 +169,7 @@ export const LogsPreviewer: React.FC<Props> = ({ projectRef, queryType, tableNam
         dispatchWhereFilters={dispatchWhereFilters}
         whereFilters={whereFilters}
         table={table}
+        condensedLayout={condensedLayout}
       />
       {showChart && !isLoading ? (
         <div>
