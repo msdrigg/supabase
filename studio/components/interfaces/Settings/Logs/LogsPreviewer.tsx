@@ -27,6 +27,9 @@ import PreviewFilterPanel from 'components/interfaces/Settings/Logs/PreviewFilte
 
 import { LOGS_TABLES } from './Logs.constants'
 import { Override } from './Logs.types'
+import ShimmeringLoader from 'components/ui/ShimmeringLoader'
+import ShimmerLine from 'components/ui/ShimmerLine'
+import LoadingOpacity from 'components/ui/LoadingOpacity'
 
 /**
  * Acts as a container component for the entire log display
@@ -139,7 +142,7 @@ export const LogsPreviewer: React.FC<Props> = ({
   }
 
   return (
-    <div className="h-full flex flex-col flex-grow space-y-4">
+    <div className="h-full flex flex-col flex-grow gap-4">
       <PreviewFilterPanel
         isShowingEventChart={showChart}
         onToggleEventChart={() => setShowChart(!showChart)}
@@ -183,13 +186,10 @@ export const LogsPreviewer: React.FC<Props> = ({
       ) : null}
       <div className="flex flex-col flex-grow relative">
         {isLoading && <div className="logs-shimmering-loader w-full h-0.5"></div>}
-        <div
-          className={
-            'flex h-full flex-grow transition-opacity ' + (isLoading ? 'opacity-30' : 'opacity-100')
-          }
-        >
+        <ShimmerLine active={isLoading} />
+        <LoadingOpacity active={isLoading}>
           <LogTable data={logData} queryType={queryType} />
-        </div>
+        </LoadingOpacity>
         <div className="p-2">
           <Button onClick={() => loadOlder()} icon={<IconRewind />} type="default">
             Load older
