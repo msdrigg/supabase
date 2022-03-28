@@ -38,7 +38,6 @@ import LoadingOpacity from 'components/ui/LoadingOpacity'
  * Query params are synced on query submission.
  *
  * params used are:
- * - `q` for the editor query.
  * - `s` for search query.
  * - `te` for timestamp start value.
  */
@@ -99,10 +98,10 @@ export const LogsPreviewer: React.FC<Props> = ({
     setFilters((prev) => ({ ...prev, search_query: template.searchString }))
   }
 
-  useEffect(() => {
-    // runs when any of the filters change
-    handleRefresh()
-  }, [whereFilters])
+  // useEffect(() => {
+  //   // runs when any of the filters change
+  //   handleRefresh()
+  // }, [whereFilters])
 
   const handleRefresh = () => {
     refresh()
@@ -112,7 +111,7 @@ export const LogsPreviewer: React.FC<Props> = ({
         ...router.query,
         te: undefined,
         ts: undefined,
-        ...whereFilters,
+        // ...whereFilters,
       },
     })
   }
